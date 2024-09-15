@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Multiplayer Game</title>
+</head>
+<body>
+    <h1>Multiplayer Game</h1>
+
+    <!-- Registration and Login -->
+    <div id="auth">
+        <h2>Register</h2>
+        <input type="text" id="regUsername" placeholder="Username">
+        <input type="password" id="regPassword" placeholder="Password">
+        <button onclick="register()">Register</button>
+
+        <h2>Login</h2>
+        <input type="text" id="loginUsername" placeholder="Username">
+        <input type="password" id="loginPassword" placeholder="Password">
+        <button onclick="login()">Login</button>
+    </div>
+
+    <!-- Game Section -->
+    <div id="game" style="display: none;">
+        <h2>Game Room</h2>
+        <button onclick="findGame()">Find Game</button>
+        <div id="status"></div>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        let socket;
+        let token;
+
+        async function register() {
+            const username = document.getElementById('regUsername').value;
+            const password = document.getElementById('regPassword').value;
+
+            const res = await fetch('/register', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, password })
+            });
+
+            if (res.ok) alert('Registration successful!');
+        }
+
+        async function login() {
+            const username = document.getElementById('loginUsername').value;
+            const password = document.getElementById('loginPassword').value;
+
+            const res = await fetch('/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, password })
+            });
+
+            const data = await res.json();
+            if (res.ok) {
+                token = data.token;
+                alert('Login successful!');
+                document.getElementById('auth').style.display = 'none';
+                document.getElementById('game').style.display = 'block';
+                socket = io();
+
+                socket.on('startGame', (data) => {
+                    document.getElementById('status').innerText = 'Game started: ' + data.opponent;
+                });
+
+                socket.on('receiveMove', (move) => {
+                    document.getElementById('status').innerText = 'Opponent made a move: ' + move;
+                });
+            } else {
+                alert('Login failed!');
+            }
+        }
+
+        function findGame() {
+            socket.emit('findGame');
+        }
+    </script>
+</body>
+</html>
